@@ -26,7 +26,8 @@ module Devise
         @check_group_membership = ldap_config.has_key?("check_group_membership") ? ldap_config["check_group_membership"] : ::Devise.ldap_check_group_membership
         @check_group_membership_without_admin = ldap_config.has_key?("check_group_membership_without_admin") ? ldap_config["check_group_membership_without_admin"] : ::Devise.ldap_check_group_membership_without_admin
         @required_groups = ldap_config["required_groups"]
-        @group_membership_attribute = ldap_config.has_key?("group_membership_attribute") ? ldap_config["group_membership_attribute"] : "uniqueMember"
+        @group_membership_pattern = ldap_config["group_membership_pattern"]
+        @group_membership_attribute = ldap_config.has_key?("group_membership_attribute") ? ldap_config["group_membership_attribute"] : "memberUid"
         @required_attributes = ldap_config["require_attribute"]
         @required_attributes_presence = ldap_config["require_attribute_presence"]
 
@@ -145,6 +146,16 @@ module Devise
         return true
       end
 
+      def search_group_attribute
+        case
+        when @group_membership_pattern == 'dn'
+          @search_group_attribute = dn
+        when @group_membership_pattern == 'uid'
+          @search_group_attribute = @login
+
+        end
+      end
+
       def in_group?(group_name, group_attribute = LDAP::DEFAULT_GROUP_UNIQUE_MEMBER_LIST_KEY)
         in_group = false
 
@@ -156,9 +167,9 @@ module Devise
 
         unless ::Devise.ldap_ad_group_check
           group_checking_ldap.search(:base => group_name, :scope => Net::LDAP::SearchScope_BaseObject) do |entry|
-            if entry[group_attribute].include? dn
+            if entry[group_attribute].include? search_group_attribute
               in_group = true
-              DeviseLdapAuthenticatable::Logger.send("User #{dn} IS included in group: #{group_name}")
+              DeviseLdapAuthenticatable::Logger.send("User #{search_group_attribute} IS included in group: #{group_name}")
             end
           end
         else
