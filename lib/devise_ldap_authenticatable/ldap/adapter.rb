@@ -2,8 +2,8 @@ require "net/ldap"
 
 module Devise
   module LDAP
-    DEFAULT_GROUP_UNIQUE_MEMBER_LIST_KEY = 'uniqueMember'
-    
+    DEFAULT_GROUP_UNIQUE_MEMBER_LIST_KEY = 'memberUid'
+
     module Adapter
       def self.valid_credentials?(login, password_plaintext)
         options = {:login => login,
